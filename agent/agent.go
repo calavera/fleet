@@ -474,14 +474,11 @@ func (a *Agent) AbleToRun(j *job.Job) bool {
 // Return all machine-related metadata from a job requirements map
 func extractMachineMetadata(requirements map[string][]string) map[string][]string {
 	metadata := make(map[string][]string)
-
-	for key, values := range requirements {
-		if !strings.HasPrefix(key, "MachineMetadata") {
+	for reqKey, values := range requirements {
+		key, ok := conditionMachineMetadataKey(reqKey)
+		if !ok {
 			continue
 		}
-
-		// Strip off leading 'MachineMetadata'
-		key = key[15:]
 
 		if len(values) == 0 {
 			log.V(2).Infof("Machine metadata requirement %s provided no values, ignoring.", key)
@@ -492,6 +489,20 @@ func extractMachineMetadata(requirements map[string][]string) map[string][]strin
 	}
 
 	return metadata
+}
+
+// Strip the requirement key from the condition metadata.
+func conditionMachineMetadataKey(key string) (string, bool) {
+	if strings.HasPrefix(key, "ConditionMachineMetadata") {
+		return key[24:], true
+	}
+
+	// Deprecated syntax added to the metadata via the old `--require` flag.
+	if strings.HasPrefix(key, "MachineMetadata") {
+		return key[15:], true
+	}
+
+	return key, false
 }
 
 // Determine if all necessary peers of a Job are scheduled to this Agent

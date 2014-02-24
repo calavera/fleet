@@ -45,7 +45,11 @@ func TestJobDescription(t *testing.T) {
 Description=PING
 `
 	jp := job.NewJobPayload("ping.service", *unit.NewSystemdUnitFile(contents))
+<<<<<<< HEAD
 	j := []job.Job{*job.NewJob("ping.service", *jp)}
+=======
+	j := []job.Job{*job.NewJob("ping.service", jp, nil)}
+>>>>>>> feat(X-ConditionMachineMetadata): Add conditional requirements to the unit file.
 	registryCtl = newTestRegistryForListUnits(nil, j)
 
 	jobs, _ := findAllUnits()
