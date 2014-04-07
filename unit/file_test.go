@@ -17,6 +17,10 @@ ExecStart=echo "ping";
 ExecStop=echo "pong"
 # ignore me, too
 ExecStop=echo post
+
+[Fleet]
+X-ConditionMachineMetadata= "foo=bar" "baz=qux"
+X-ConditionMachineMetadata="foobar=bazqux"
 `
 
 	expected := map[string]map[string][]string{
@@ -26,6 +30,9 @@ ExecStop=echo post
 		"Service": map[string][]string{
 			"ExecStart": []string{"echo \"ping\";"},
 			"ExecStop":  []string{"echo \"pong\"", "echo post"},
+		},
+		"Fleet": map[string][]string{
+			"X-ConditionMachineMetadata": []string{"foo=bar", "baz=qux", "foobar=bazqux"},
 		},
 	}
 

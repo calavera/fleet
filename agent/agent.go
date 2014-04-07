@@ -22,6 +22,8 @@ const (
 
 	// Refresh TTLs at 1/2 the TTL length
 	refreshInterval = 2
+
+	DeprecatedMachineMetadata = "MachineMetadata"
 )
 
 // The Agent owns all of the coordination between the Registry, the local
@@ -474,35 +476,44 @@ func (a *Agent) AbleToRun(j *job.Job) bool {
 // Return all machine-related metadata from a job requirements map
 func extractMachineMetadata(requirements map[string][]string) map[string][]string {
 	metadata := make(map[string][]string)
-	for reqKey, values := range requirements {
-		key, ok := conditionMachineMetadataKey(reqKey)
-		if !ok {
-			continue
-		}
+	for key, values := range requirements {
+		// Deprecated syntax added to the metadata via the old `--require` flag.
+		if strings.HasPrefix(key, DeprecatedMachineMetadata) {
+			if len(values) == 0 {
+				log.V(2).Infof("Machine metadata requirement %s provided no values, ignoring.", key)
+				continue
+			}
 
-		if len(values) == 0 {
-			log.V(2).Infof("Machine metadata requirement %s provided no values, ignoring.", key)
-			continue
-		}
+			metadata[key[15:]] = values
+		} else if key == unit.FleetXConditionMachineMetadata {
+			for _, valuePair := range values {
+				s := strings.Split(valuePair, "=")
 
-		metadata[key] = values
+				if len(s) != 2 {
+					log.V(2).Infof("Machine metadata requirement %q has invalid format, ignoring.", valuePair)
+					continue
+				}
+
+				if len(s[0]) == 0 {
+					log.V(2).Infof("Machine metadata requirement %q provided no values, ignoring.", valuePair)
+					continue
+				}
+				if len(s[1]) == 0 {
+					log.V(2).Infof("Machine metadata requirement %q provided no keys, ignoring.", valuePair)
+					continue
+				}
+
+				var mValues []string
+				if mv, ok := metadata[s[0]]; ok {
+					mValues = mv
+				}
+
+				metadata[s[0]] = append(mValues, s[1])
+			}
+		}
 	}
 
 	return metadata
-}
-
-// Strip the requirement key from the condition metadata.
-func conditionMachineMetadataKey(key string) (string, bool) {
-	if strings.HasPrefix(key, "ConditionMachineMetadata") {
-		return key[24:], true
-	}
-
-	// Deprecated syntax added to the metadata via the old `--require` flag.
-	if strings.HasPrefix(key, "MachineMetadata") {
-		return key[15:], true
-	}
-
-	return key, false
 }
 
 // Determine if all necessary peers of a Job are scheduled to this Agent

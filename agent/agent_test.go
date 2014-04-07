@@ -40,7 +40,7 @@ X-ConditionMachineBootID=XYZ
 func TestAbleToRunWithConditionMachineMetadata(t *testing.T) {
 	agent := &Agent{machine: newTestMachine("us-west-1"), state: NewState()}
 
-	job := newTestJobWithMachineMetadata("X-ConditionMachineMetadataRegion=us-west-1")
+	job := newTestJobWithMachineMetadata(`X-ConditionMachineMetadata= "region=us-west-1"`)
 	if !agent.AbleToRun(job) {
 		t.Fatal("Expected to be able to run the job with same region metadata")
 	}
@@ -49,9 +49,7 @@ func TestAbleToRunWithConditionMachineMetadata(t *testing.T) {
 func TestAbleToRunMatchingOneOfTheConditions(t *testing.T) {
 	agent := &Agent{machine: newTestMachine("us-west-1"), state: NewState()}
 
-	job := newTestJobWithMachineMetadata(`X-ConditionMachineMetadataRegion=us-east-1
-X-ConditionMachineMetadataRegion=us-west-1`)
-
+	job := newTestJobWithMachineMetadata(`X-ConditionMachineMetadata= "region=us-east-1" "region=us-west-1"`)
 	if !agent.AbleToRun(job) {
 		t.Fatal("Expected to be able to run the job with one matching region in the metadata")
 	}
@@ -60,7 +58,7 @@ X-ConditionMachineMetadataRegion=us-west-1`)
 func TestNotAbleToRunWithoutConditionMachineMetadata(t *testing.T) {
 	agent := &Agent{machine: newTestMachine("us-east-1"), state: NewState()}
 
-	job := newTestJobWithMachineMetadata("X-ConditionMachineMetadataRegion=us-west-1")
+	job := newTestJobWithMachineMetadata(`X-ConditionMachineMetadata= "region=us-west-1"`)
 	if agent.AbleToRun(job) {
 		t.Fatal("Expected to not be able to run the job with different region metadata")
 	}
@@ -69,15 +67,29 @@ func TestNotAbleToRunWithoutConditionMachineMetadata(t *testing.T) {
 func TestAbleToRunWithDeprecatedMachineMetadata(t *testing.T) {
 	agent := &Agent{machine: newTestMachine("us-west-1"), state: NewState()}
 
-	job := newTestJobWithMachineMetadata("X-MachineMetadataRegion=us-west-1")
+	job := newTestJobWithMachineMetadata("X-MachineMetadataregion=us-west-1")
 	if !agent.AbleToRun(job) {
 		t.Fatal("Expected to be able to run the job with same region metadata")
 	}
 }
 
+func TestAbleToRunWithBadFormattedMachineMetadata(t *testing.T) {
+	agent := &Agent{machine: newTestMachine("us-west-1"), state: NewState()}
+
+	job := newTestJobWithMachineMetadata(`X-ConditionMachineMetadata= "=us-west-1"`)
+	if !agent.AbleToRun(job) {
+		t.Fatal("Expected to ignore bad formatted metadata")
+	}
+
+	job = newTestJobWithMachineMetadata(`X-ConditionMachineMetadata= "us-west-1="`)
+	if !agent.AbleToRun(job) {
+		t.Fatal("Expected to ignore bad formatted metadata")
+	}
+}
+
 func newTestMachine(region string) *machine.Machine {
 	metadata := map[string]string{
-		"Region": region,
+		"region": region,
 	}
 	return machine.New("", "", metadata)
 }
