@@ -21,6 +21,7 @@ ExecStop=echo post
 [Fleet]
 X-ConditionMachineMetadata= "foo=bar" "baz=qux"
 X-ConditionMachineMetadata="foobar=bazqux"
+X-Conflicts="foo.service" "bar.service"
 `
 
 	expected := map[string]map[string][]string{
@@ -33,6 +34,7 @@ X-ConditionMachineMetadata="foobar=bazqux"
 		},
 		"Fleet": map[string][]string{
 			"X-ConditionMachineMetadata": []string{"foo=bar", "baz=qux", "foobar=bazqux"},
+			"X-Conflicts":                []string{"foo.service", "bar.service"},
 		},
 	}
 
