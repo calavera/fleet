@@ -40,7 +40,7 @@ X-ConditionMachineBootID=XYZ
 func TestAbleToRunWithConditionMachineMetadata(t *testing.T) {
 	agent := &Agent{machine: newTestMachine("us-west-1"), state: NewState()}
 
-	job := newTestJobWithMachineMetadata(`X-ConditionMachineMetadata= "region=us-west-1"`)
+	job := newTestJobWithMachineMetadata(`X-ConditionMachineMetadata=region=us-west-1`)
 	if !agent.AbleToRun(job) {
 		t.Fatal("Expected to be able to run the job with same region metadata")
 	}
@@ -76,12 +76,12 @@ func TestAbleToRunWithDeprecatedMachineMetadata(t *testing.T) {
 func TestAbleToRunWithBadFormattedMachineMetadata(t *testing.T) {
 	agent := &Agent{machine: newTestMachine("us-west-1"), state: NewState()}
 
-	job := newTestJobWithMachineMetadata(`X-ConditionMachineMetadata= "=us-west-1"`)
+	job := newTestJobWithMachineMetadata(`X-ConditionMachineMetadata==us-west-1`)
 	if !agent.AbleToRun(job) {
 		t.Fatal("Expected to ignore bad formatted metadata")
 	}
 
-	job = newTestJobWithMachineMetadata(`X-ConditionMachineMetadata= "us-west-1="`)
+	job = newTestJobWithMachineMetadata(`X-ConditionMachineMetadata=us-west-1=`)
 	if !agent.AbleToRun(job) {
 		t.Fatal("Expected to ignore bad formatted metadata")
 	}
@@ -100,9 +100,7 @@ func newTestJobWithMachineMetadata(metadata string) *job.Job {
 %s
 `, metadata)
 
-	ms := &machine.MachineState{"XXX", "", make(map[string]string, 0), "1"}
-	js1 := job.NewJobState("loaded", "inactive", "running", []string{}, ms)
 	jp1 := job.NewJobPayload("us-west.service", *unit.NewSystemdUnitFile(contents))
 
-	return job.NewJob("pong.service", jp1, js1)
+	return job.NewJob("pong.service", *jp1)
 }

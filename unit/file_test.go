@@ -19,9 +19,8 @@ ExecStop=echo "pong"
 ExecStop=echo post
 
 [Fleet]
-X-ConditionMachineMetadata= "foo=bar" "baz=qux"
-X-ConditionMachineMetadata="foobar=bazqux"
-X-Conflicts="foo.service" "bar.service"
+X-ConditionMachineMetadata=foo=bar
+X-ConditionMachineMetadata=baz=qux
 `
 
 	expected := map[string]map[string][]string{
@@ -29,12 +28,11 @@ X-Conflicts="foo.service" "bar.service"
 			"Description": []string{"Foo"},
 		},
 		"Service": map[string][]string{
-			"ExecStart": []string{"echo \"ping\";"},
-			"ExecStop":  []string{"echo \"pong\"", "echo post"},
+			"ExecStart": []string{`echo "ping";`},
+			"ExecStop":  []string{`echo "pong"`, "echo post"},
 		},
 		"Fleet": map[string][]string{
-			"X-ConditionMachineMetadata": []string{"foo=bar", "baz=qux", "foobar=bazqux"},
-			"X-Conflicts":                []string{"foo.service", "bar.service"},
+			"X-ConditionMachineMetadata": []string{"foo=bar", "baz=qux"},
 		},
 	}
 

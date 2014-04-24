@@ -23,7 +23,11 @@ const (
 	// Refresh TTLs at 1/2 the TTL length
 	refreshInterval = 2
 
-	DeprecatedMachineMetadata = "MachineMetadata"
+	// Machine metadata key for the deprecated `require` flag
+	requireFlagMachineMetadata = "MachineMetadata"
+
+	// Machine metadata key in the unit file
+	fleetXConditionMachineMetadata = "ConditionMachineMetadata"
 )
 
 // The Agent owns all of the coordination between the Registry, the local
@@ -478,14 +482,14 @@ func extractMachineMetadata(requirements map[string][]string) map[string][]strin
 	metadata := make(map[string][]string)
 	for key, values := range requirements {
 		// Deprecated syntax added to the metadata via the old `--require` flag.
-		if strings.HasPrefix(key, DeprecatedMachineMetadata) {
+		if strings.HasPrefix(key, requireFlagMachineMetadata) {
 			if len(values) == 0 {
 				log.V(2).Infof("Machine metadata requirement %s provided no values, ignoring.", key)
 				continue
 			}
 
 			metadata[key[15:]] = values
-		} else if key == unit.FleetXConditionMachineMetadata {
+		} else if key == fleetXConditionMachineMetadata {
 			for _, valuePair := range values {
 				s := strings.Split(valuePair, "=")
 

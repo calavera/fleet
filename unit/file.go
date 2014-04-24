@@ -85,23 +85,13 @@ func deserializeUnitFile(raw string) map[string]map[string][]string {
 			continue
 		}
 
-		// Check for key=value
-		if strings.ContainsAny(line, "=") && len(section) > 0 {
-			key, value := deserializeUnitLine(line)
-
-			if strings.Contains(value, `" "`) {
-				multiple := strings.Split(value, `" "`)
-				for _, el := range multiple {
-					v := strings.Trim(el, `"`)
-					sections[section][key] = append(sections[section][key], v)
-				}
-			} else {
-				if value[0] == '"' && value[len(value)-1] == '"' {
-					value = strings.Trim(value, `"`)
-				}
-				sections[section][key] = append(sections[section][key], value)
-			}
+		// ignore any lines that aren't within a section
+		if len(section) == 0 {
+			continue
 		}
+
+		key, value := deserializeUnitLine(line)
+		sections[section][key] = append(sections[section][key], value)
 	}
 
 	return sections
@@ -109,8 +99,8 @@ func deserializeUnitFile(raw string) map[string]map[string][]string {
 
 func deserializeUnitLine(line string) (string, string) {
 	parts := strings.SplitN(line, "=", 2)
-	key := strings.Trim(parts[0], " ")
-	value := strings.Trim(parts[1], " ")
+	key := strings.TrimSpace(parts[0])
+	value := strings.TrimSpace(parts[1])
 
 	return key, value
 }
