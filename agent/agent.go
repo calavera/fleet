@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -490,29 +491,33 @@ func extractMachineMetadata(requirements map[string][]string) map[string][]strin
 
 			metadata[key[15:]] = values
 		} else if key == fleetXConditionMachineMetadata {
-			for _, valuePair := range values {
-				s := strings.Split(valuePair, "=")
+			for _, v := range values {
+				m := parseMultivalueLine(v)
 
-				if len(s) != 2 {
-					log.V(2).Infof("Machine metadata requirement %q has invalid format, ignoring.", valuePair)
-					continue
-				}
+				for _, valuePair := range m {
+					s := strings.Split(valuePair, "=")
 
-				if len(s[0]) == 0 {
-					log.V(2).Infof("Machine metadata requirement %q provided no values, ignoring.", valuePair)
-					continue
-				}
-				if len(s[1]) == 0 {
-					log.V(2).Infof("Machine metadata requirement %q provided no keys, ignoring.", valuePair)
-					continue
-				}
+					if len(s) != 2 {
+						log.V(2).Infof("Machine metadata requirement %q has invalid format, ignoring.", valuePair)
+						continue
+					}
 
-				var mValues []string
-				if mv, ok := metadata[s[0]]; ok {
-					mValues = mv
-				}
+					if len(s[0]) == 0 {
+						log.V(2).Infof("Machine metadata requirement %q provided no values, ignoring.", valuePair)
+						continue
+					}
+					if len(s[1]) == 0 {
+						log.V(2).Infof("Machine metadata requirement %q provided no keys, ignoring.", valuePair)
+						continue
+					}
 
-				metadata[s[0]] = append(mValues, s[1])
+					var mValues []string
+					if mv, ok := metadata[s[0]]; ok {
+						mValues = mv
+					}
+
+					metadata[s[0]] = append(mValues, s[1])
+				}
 			}
 		}
 	}
@@ -536,4 +541,31 @@ func (a *Agent) peerScheduledHere(jobName, peerName string) bool {
 
 func (a *Agent) UnresolvedJobOffers() []job.JobOffer {
 	return a.registry.UnresolvedJobOffers()
+}
+
+func parseMultivalueLine(line string) (values []string) {
+	var v bytes.Buffer
+	w := false // check whether we're within quotes or not
+
+	for _, e := range []byte(strings.TrimSpace(line)) {
+		// ignore quotes
+		if e == '"' {
+			w = !w
+			continue
+		}
+
+		if e == ' ' {
+			if !w { // between quoted values, keep the previous value and reset.
+				values = append(values, v.String())
+				v.Reset()
+				continue
+			}
+		}
+
+		v.WriteByte(e)
+	}
+
+	values = append(values, v.String())
+
+	return
 }
